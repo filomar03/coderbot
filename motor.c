@@ -18,7 +18,7 @@ void motor_gpio_reset(const motor_t* motor) {
 }
 
 int motor_gpio_move(const motor_t* motor, uint32_t duty_cycle) {
-    if(duty_cycle > MAX_DUTY_CYC) {
+    if(duty_cycle > MAX_DUTY_CYCLE) {
         return E_DUTY_CYC_OUT_OF_RANGE;
     }
 
