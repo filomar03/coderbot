@@ -13,7 +13,8 @@
 #define DIRECTION_BACKWARD 1
 
 typedef struct {
-    gpio_t pin_forward, pin_backward;
+    gpio_t pin_forward;
+    gpio_t pin_backward;
     uint8_t direction;
 } motor_t;
 
