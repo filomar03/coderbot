@@ -17,17 +17,19 @@ void motor_gpio_reset(const motor_t* motor) {
     gpioWrite(motor->pin_backward, 0);
 }
 
-void motor_gpio_move(const motor_t* motor, uint32_t duty_cycle) {
+int motor_gpio_move(const motor_t* motor, uint32_t duty_cycle) {
     if(duty_cycle > MAX_DUTY_CYC) {
         return E_DUTY_CYC_OUT_OF_RANGE;
     }
-    
+
     if(motor->direction == DIRECTION_FORWARD) {
         gpioWrite(motor->pin_backward, 0);
-        gpioPWM(motor->pin_forward, duty_cycle); 
+        gpioPWM(motor->pin_forward, duty_cycle);
     }
     else {
         gpioWrite(motor->pin_forward, 0);
-        gpioPWM(motor->pin_backward, duty_cycle); 
+        gpioPWM(motor->pin_backward, duty_cycle);
     }
+
+    return 0;
 }
