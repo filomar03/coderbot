@@ -1,7 +1,7 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-#define DUTY_CYC_OUT_OF_RANGE 10
+#define E_DUTY_CYC_OUT_OF_RANGE 10
 #define E_INVALID_MODE 20
 
 #define HIGH 1
