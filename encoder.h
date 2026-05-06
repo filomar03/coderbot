@@ -1,11 +1,15 @@
 #include "gpio.h"
 #include <stdint.h>
 
-#define CHANNEL_A 0
-#define CHANNEL_B 1
+typedef enum {
+    CHANNEL_A,
+    CHANNEL_B
+} channel_t;
 
-#define BOUNCE_DETECTED 1
-#define NO_BOUNCE 0
+typedef enum {
+    BOUNCE_DETECTED,
+    NO_BOUNCE
+} signal_bounce_t;
 
 typedef struct {
     gpio_t pin_a, pin_b;
@@ -16,5 +20,5 @@ typedef struct {
 } encoder_t;
 
 void encoder_gpio_init(const encoder_t*);
-void encoder_gpio_register_isr(const encoder_t*, int, int, void(*), void(*));
-void encoder_gpio_cancel_isr(const encoder_t*, int, int);
+void encoder_gpio_register_isr(const encoder_t*, channel_t, int, void(*), void(*));
+void encoder_gpio_cancel_isr(const encoder_t*, channel_t, int);

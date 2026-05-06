@@ -13,7 +13,8 @@ void encoder_gpio_init(const encoder_t *encoder){
     gpioSetPullUpDown(encoder->pin_b, PI_PUD_UP);
 }
 
-void encoder_gpio_register_isr(const encoder_t* encoder, int selected_channel, int timeout, void(*isr_raising), void(*isr_falling)) {  // Interrupt Service Routine
+// visto che init inizzializza entrmbi i canali, avrebbe senso che anche queste funzioni fanno entrambi!!
+void encoder_gpio_register_isr(const encoder_t* encoder, channel_t selected_channel, int timeout, void(*isr_raising), void(*isr_falling)) {  // Interrupt Service Routine
     gpio_t channel;
     if (selected_channel == CHANNEL_A) {
         channel = encoder->pin_a;
@@ -25,7 +26,8 @@ void encoder_gpio_register_isr(const encoder_t* encoder, int selected_channel, i
     gpioSetISRFuncEx(channel, FALLING_EDGE, timeout, isr_falling, (void*)encoder);
 }
 
-void encoder_gpio_cancel_isr(const encoder_t* encoder, int selected_channel, int timeout) {  // Interrupt Service Routine
+// visto che init inizzializza entrmbi i canali, avrebbe senso che anche queste funzioni fanno entrambi!!
+void encoder_gpio_cancel_isr(const encoder_t* encoder, channel_t selected_channel, int timeout) {  // Interrupt Service Routine
     gpio_t channel;
     if (selected_channel == CHANNEL_A) {
         channel = encoder->pin_a;
@@ -37,7 +39,7 @@ void encoder_gpio_cancel_isr(const encoder_t* encoder, int selected_channel, int
     gpioSetISRFuncEx(channel, FALLING_EDGE, timeout, NULL, NULL);
 }
 
-int debounce(int gpio, encoder_t* enc) { // controllare questa funzione
+signal_bounce_t debounce(int gpio, encoder_t* enc) { // controllare questa funzione!!
     if (gpio == enc->last_edge) return BOUNCE_DETECTED;
     return NO_BOUNCE;
 }

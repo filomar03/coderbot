@@ -1,13 +1,18 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-#define E_DUTY_CYC_OUT_OF_RANGE 10
-#define E_INVALID_MODE 20
+typedef enum {
+    NO_ERROR,
+    ERROR_DUTY_CYC_OUT_OF_RANGE = 10,
+    ERROR_INVALID_MODE = 20,
+} gpio_error_t;
 
-#define HIGH 1
-#define LOW 0
+typedef enum {
+    LOW = 0,
+    HIGH = 1
+} pin_state_t;
 
-enum gpiov5 {
+typedef enum gpiov5 {
     PIN_LEFT_FORWARD = 17,
     PIN_LEFT_BACKWARD = 18,
     PIN_RIGHT_FORWARD = 23,
@@ -16,8 +21,6 @@ enum gpiov5 {
     PIN_ENCODER_LEFT_B = 15,
     PIN_ENCODER_RIGHT_A = 24,
     PIN_ENCODER_RIGHT_B = 25,
-};
-
-typedef enum gpiov5 gpio_t;
+} gpio_t;
 
 #endif

@@ -9,8 +9,10 @@
 #define PWM_FREQUENCY 100
 #define MAX_DUTY_CYCLE 255
 
-#define DIRECTION_FORWARD 0
-#define DIRECTION_BACKWARD 1
+typedef enum {
+    DIRECTION_FORWARD,
+    DIRECTION_BACKWARD
+} direction_t;
 
 typedef struct {
     gpio_t pin_forward;
@@ -20,6 +22,6 @@ typedef struct {
 
 void motor_gpio_init(const motor_t*);
 void motor_gpio_reset(const motor_t*);
-int motor_gpio_move(const motor_t*, uint32_t);
+gpio_error_t motor_gpio_move(const motor_t*, uint32_t);
 
 #endif
