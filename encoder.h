@@ -4,6 +4,9 @@
 #define CHANNEL_A 0
 #define CHANNEL_B 1
 
+#define BOUNCE_DETECTED 1
+#define NO_BOUNCE 0
+
 typedef struct {
     gpio_t pin_a, pin_b;
     gpio_t last_edge;
