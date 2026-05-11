@@ -50,7 +50,6 @@ void init() {
     motor_gpio_init(&right_motor);
     encoder_gpio_register_isr(&left_encoder, &alert_callback);
     encoder_gpio_register_isr(&right_encoder, &alert_callback);
-    // registrare le edges
 }
 
 void terminate() {
@@ -67,6 +66,6 @@ int main(void) {
     printf("forward for %dms\n", ms);
     motor_gpio_move(&left_motor, 128);
     motor_gpio_move(&right_motor, 128);
-    sleep(ms);
+    sleep(ms / 1000);
     exit(EXIT_SUCCESS);
 }

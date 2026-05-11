@@ -34,12 +34,12 @@ signal_bounce_t debounce(int gpio, encoder_t* encoder, uint32_t now) {
     return NO_BOUNCE;
 }
 
-inline void forward(encoder_t* encoder) {
+void forward(encoder_t* encoder) {
     encoder->direction = DIRECTION_FORWARD;
     encoder->ticks++;
 }
 
-inline void backward(encoder_t* encoder) {
+void backward(encoder_t* encoder) {
     encoder->direction = DIRECTION_BACKWARD;
     encoder->ticks++;
 }

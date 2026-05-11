@@ -33,6 +33,6 @@ typedef struct {
 
 void encoder_gpio_register_isr(const encoder_t*, gpioAlertFuncEx_t);
 void encoder_gpio_cancel_isr(const encoder_t*);
-void alert_callback(int gpio, int level, uint32_t now, void *userdata)
+void alert_callback(int gpio, int level, uint32_t now, void *userdata);
 
 #endif
