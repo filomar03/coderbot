@@ -12,31 +12,23 @@
 encoder_t left_encoder = {
     PIN_ENCODER_LEFT_A,
     PIN_ENCODER_LEFT_B,
-    LAST_EDGE_INIT,
-    LEVEL_INIT,
-    LEVEL_INIT,
+    0,
+    0,
+    LOW,
+    LOW,
     DIRECTION_FORWARD,
-    TICKS_INIT
-};
-
-encoder_t left_encoder = {
-    PIN_ENCODER_LEFT_A,
-    PIN_ENCODER_LEFT_B,
-    LAST_EDGE_INIT,
-    LEVEL_INIT,
-    LEVEL_INIT,
-    DIRECTION_FORWARD,
-    TICKS_INIT
+    0
 };
 
 encoder_t right_encoder = {
     PIN_ENCODER_RIGHT_A,
     PIN_ENCODER_RIGHT_B,
-    LAST_EDGE_INIT,
-    LEVEL_INIT,
-    LEVEL_INIT,
+    0,
+    0,
+    LOW,
+    LOW,
     DIRECTION_FORWARD,
-    TICKS_INIT
+    0
 };
 
 motor_t left_motor = {
@@ -44,6 +36,7 @@ motor_t left_motor = {
     PIN_LEFT_BACKWARD,
     DIRECTION_FORWARD
 };
+
 motor_t right_motor = {
     PIN_RIGHT_FORWARD,
     PIN_RIGHT_BACKWARD,
@@ -55,9 +48,8 @@ void init() {
     gpioInitialise();
     motor_gpio_init(&left_motor);
     motor_gpio_init(&right_motor);
-    encoder_gpio_init(&left_encoder);
-    encoder_gpio_init(&right_encoder);
-
+    encoder_gpio_register_isr(&left_encoder, &alert_callback);
+    encoder_gpio_register_isr(&right_encoder, &alert_callback);
     // registrare le edges
 }
 
