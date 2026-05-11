@@ -7,6 +7,37 @@
 #include <pigpio.h>
 #include "gpio.h"
 #include "motor.h"
+#include "encoder.h"
+
+encoder_t left_encoder = {
+    PIN_ENCODER_LEFT_A,
+    PIN_ENCODER_LEFT_B,
+    LAST_EDGE_INIT,
+    LEVEL_INIT,
+    LEVEL_INIT,
+    DIRECTION_FORWARD,
+    TICKS_INIT
+};
+
+encoder_t left_encoder = {
+    PIN_ENCODER_LEFT_A,
+    PIN_ENCODER_LEFT_B,
+    LAST_EDGE_INIT,
+    LEVEL_INIT,
+    LEVEL_INIT,
+    DIRECTION_FORWARD,
+    TICKS_INIT
+};
+
+encoder_t right_encoder = {
+    PIN_ENCODER_RIGHT_A,
+    PIN_ENCODER_RIGHT_B,
+    LAST_EDGE_INIT,
+    LEVEL_INIT,
+    LEVEL_INIT,
+    DIRECTION_FORWARD,
+    TICKS_INIT
+};
 
 motor_t left_motor = {
     PIN_LEFT_FORWARD,
@@ -19,10 +50,15 @@ motor_t right_motor = {
     DIRECTION_FORWARD
 };
 
+
 void init() {
     gpioInitialise();
     motor_gpio_init(&left_motor);
     motor_gpio_init(&right_motor);
+    encoder_gpio_init(&left_encoder);
+    encoder_gpio_init(&right_encoder);
+
+    // registrare le edges
 }
 
 void terminate() {

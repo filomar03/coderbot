@@ -3,11 +3,17 @@
 
 #define CHANNEL_A 0
 #define CHANNEL_B 1
+#define LAST_EDGE_INIT -1
+#define LEVEL_INIT -1
+#define TICKS_INIT 0
+
 
 typedef struct {
-    gpio_t pin_a, pin_b;
+    gpio_t pin_a;
+    gpio_t pin_b;
     gpio_t last_edge;
-    uint16_t level_a, level_b;
+    uint16_t level_a;
+    uint16_t level_b;
     uint8_t direction;
     int64_t ticks;
 } encoder_t;
