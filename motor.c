@@ -3,12 +3,10 @@
 #include "constants.h"
 
 void motor_gpio_init(const motor_t* motor) {
-    // Init forward pin
     gpioSetMode(motor->pin_forward, PI_OUTPUT);
     gpioSetPWMrange(motor->pin_forward, MAX_DUTY_CYCLE);
     gpioSetPWMfrequency(motor->pin_forward, PWM_FREQUENCY);
 
-    // Init backward pin
     gpioSetMode(motor->pin_backward, PI_OUTPUT);
     gpioSetPWMrange(motor->pin_backward, MAX_DUTY_CYCLE);
     gpioSetPWMfrequency(motor->pin_backward, PWM_FREQUENCY);

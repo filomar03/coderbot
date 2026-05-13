@@ -12,13 +12,13 @@
 encoder_t left_encoder = {
     {
         PIN_ENCODER_LEFT_A,
-        BOUNCE_THRESHOLD,
-
+        -1,
+        LOW // qua non ho capito se va bene LOW o se c'e il rischio che vengano saltati dei tick
     },
     {
         PIN_ENCODER_LEFT_B,
-        BOUNCE_THRESHOLD,
-
+        -1,
+        LOW // qua non ho capito se va bene LOW o se c'e il rischio che vengano saltati dei tick
     },
     DIRECTION_FORWARD,
     0
@@ -27,13 +27,13 @@ encoder_t left_encoder = {
 encoder_t right_encoder = {
     {
         PIN_ENCODER_RIGHT_A,
-        BOUNCE_THRESHOLD,
-
+        -1,
+        LOW // qua non ho capito se va bene LOW o se c'e il rischio che vengano saltati dei tick
     },
     {
         PIN_ENCODER_RIGHT_B,
-        BOUNCE_THRESHOLD,
-
+        -1,
+        LOW // qua non ho capito se va bene LOW o se c'e il rischio che vengano saltati dei tick
     },
     DIRECTION_FORWARD,
     0
@@ -78,6 +78,7 @@ int main(void) {
     motor_gpio_move(&left_motor, 128 * LEFT_MOTOR_K);
     motor_gpio_move(&right_motor, 128 * RIGHT_MOTOR_K);
     sleep(ms / 1000);
+    // redirezionare output nel file log con operatore >> per creare dati
     printf("registered ticks: %ld - %ld\npwm factor: %.3f - %.3f\ntime: %dms\ndistance: (INSERT MANUALLY)mm\n\n", left_encoder.ticks, right_encoder.ticks, LEFT_MOTOR_K, RIGHT_MOTOR_K, ms);
     exit(EXIT_SUCCESS);
 }

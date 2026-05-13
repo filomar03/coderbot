@@ -5,11 +5,10 @@
 #include <stdint.h>
 
 void encoder_gpio_register_isr(const encoder_t* encoder, gpioAlertFuncEx_t isr) {
-    // Canale A
     gpioSetMode(encoder->channelA.pin, PI_INPUT);
     gpioSetPullUpDown(encoder->channelA.pin, PI_PUD_UP);
     gpioSetAlertFuncEx(encoder->channelA.pin, isr, (void*) encoder);
-    // Canale B
+
     gpioSetMode(encoder->channelB.pin, PI_INPUT);
     gpioSetPullUpDown(encoder->channelB.pin, PI_PUD_UP);
     gpioSetAlertFuncEx(encoder->channelB.pin, isr, (void*) encoder);
@@ -45,8 +44,8 @@ void backward(encoder_t* encoder) {
     encoder->ticks--;
 }
 
-// non dovrebbero esserci problemi si sincronizzazione (almeno non sulla conta dei tick)
-// siccome i callback vengono chiamati sullo stesso thread
+// non dovrebbero esserci problemi si sincronizzazione (almeno non sull'incremento).
+// siccome i callback vengono chiamati tutti sullo stesso thread in maniera sincrona
 void alert_callback(int gpio, int level, uint32_t tick, void *userdata) {
     encoder_t *encoder = (encoder_t *) userdata;
     // qua il prof avrebbe aggiunto un controllo che se non
