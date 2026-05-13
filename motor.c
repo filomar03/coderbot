@@ -1,5 +1,6 @@
 #include "motor.h"
 #include "gpio.h"
+#include "constants.h"
 
 void motor_gpio_init(const motor_t* motor) {
     // Init forward pin
@@ -34,3 +35,7 @@ gpio_error_t motor_gpio_move(const motor_t* motor, uint32_t duty_cycle) {
 
     return NO_ERROR;
 }
+
+// gpio_error_t motor_gpio_move_mm(const motor_t* motor, uint32_t duty_cycle, int mm) {
+//     float target_tick = TICK_PER_RAD * mm;
+// }

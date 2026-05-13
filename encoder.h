@@ -2,6 +2,7 @@
 #define ENCODER_H
 
 #include "gpio.h"
+#include "motor.h"
 #include <pigpio.h>
 #include <stdint.h>
 
@@ -18,16 +19,15 @@ typedef enum {
 } signal_bounce_t;
 
 typedef struct {
-    gpio_t pin_a;
-    gpio_t pin_b;
+    gpio_t pin;
+    uint32_t last_alert_tick;
+    pin_state_t level;
+} encoder_channel_t;
 
-    uint32_t last_a;
-    uint32_t last_b;
-
-    uint16_t level_a;
-    uint16_t level_b;
-
-    uint8_t direction;
+typedef struct {
+    encoder_channel_t channelA;
+    encoder_channel_t channelB;
+    direction_t direction;
     int64_t ticks;
 } encoder_t;
 
