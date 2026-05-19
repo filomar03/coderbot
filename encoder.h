@@ -28,7 +28,7 @@ typedef struct {
     encoder_channel_t channelA;
     encoder_channel_t channelB;
     direction_t direction;
-    int64_t ticks;
+    int64_t ticks; // TODO: rendere  variabile atomica
 } encoder_t;
 
 void encoder_gpio_register_isr(const encoder_t*, gpioAlertFuncEx_t);

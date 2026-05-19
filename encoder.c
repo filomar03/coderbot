@@ -44,23 +44,13 @@ void backward(encoder_t* encoder) {
     encoder->ticks--;
 }
 
-// non dovrebbero esserci problemi si sincronizzazione (almeno non sull'incremento).
-// siccome i callback vengono chiamati tutti sullo stesso thread in maniera sincrona
+// i callback vengono chiamati sequenzialmente in un thread separato
 void alert_callback(int gpio, int level, uint32_t tick, void *userdata) {
     encoder_t *encoder = (encoder_t *) userdata;
-    // qua il prof avrebbe aggiunto un controllo che se non
-    // esgue il debounce al primo movimento, sinceramente da quello
-    // che ho capito gia il bounce non dovrebbe essere un problema con
-    // encoder a effetto hall, ma anzi penso dovremmo utilizzare pigpio glitchFilter
+    // potrebbe avere senso usare pigpio glitchFilter
     if (debounce(gpio, encoder, tick) == BOUNCE_DETECTED) return;
     if (gpio == encoder->channelA.pin) {
         if (level == HIGH) {
-            // il prof qua usa gpioRead invece che usare i campi nello struct,
-            // ma nella documentazione della libreria dice espressamente di non
-            // fare cosi (usare gpioRead), perche il callback potrebbe essere
-            // chiamato in ritardo (di parecchi ms) rispetto all'effettivo
-            // cambio di fronte e quindi bisognerebbe verificare
-            // che siano gia avvenuti altri cambi di fronte nel mentre
             encoder->channelB.level == HIGH ? forward(encoder) : backward(encoder);
         } else {
             encoder->channelB.level == LOW ? forward(encoder) : backward(encoder);
