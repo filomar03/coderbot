@@ -37,8 +37,8 @@ typedef struct {
     atomic_int_fast64_t ticks;
 } encoder_t;
 
-void encoder_gpio_register_isr(const encoder_t*, gpioAlertFuncEx_t);
-void encoder_gpio_cancel_isr(const encoder_t*);
+void encoder_gpio_register_isr(encoder_t*, gpioAlertFuncEx_t);
+void encoder_gpio_cancel_isr(encoder_t*);
 void alert_callback(int gpio, int level, uint32_t now, void *userdata);
 
 #endif

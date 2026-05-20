@@ -1,6 +1,6 @@
 #include "encoder.h"
 
-void encoder_gpio_register_isr(const encoder_t* encoder, gpioAlertFuncEx_t isr) {
+void encoder_gpio_register_isr(encoder_t* encoder, gpioAlertFuncEx_t isr) {
     gpioSetMode(encoder->channelA.pin, PI_INPUT);
     gpioSetPullUpDown(encoder->channelA.pin, PI_PUD_UP);
     gpioGlitchFilter(encoder->channelA.pin, GLITCH_FILTER_MICROS);
@@ -12,7 +12,7 @@ void encoder_gpio_register_isr(const encoder_t* encoder, gpioAlertFuncEx_t isr) 
     gpioSetAlertFuncEx(encoder->channelB.pin, isr, (void*) encoder);
 }
 
-void encoder_gpio_cancel_isr(const encoder_t* encoder) {
+void encoder_gpio_cancel_isr(encoder_t* encoder) {
     gpioSetAlertFuncEx(encoder->channelA.pin, NULL, NULL);
     gpioSetAlertFuncEx(encoder->channelB.pin, NULL, NULL);
 }
@@ -50,9 +50,9 @@ void alert_callback(int gpio, int level, uint32_t tick, void *userdata) {
     // if (debounce(gpio, encoder, tick) == BOUNCE_DETECTED) return;
     if (gpio == encoder->channelA.pin) {
         if (level == HIGH) {
-            encoder->channelB.level == HIGH ? forward(encoder) : backward(encoder);
+            encoder->channelB.level == HIGH ? backward(encoder) : forward(encoder);
         } else {
-            encoder->channelB.level == LOW ? forward(encoder) : backward(encoder);
+            encoder->channelB.level == LOW ? backward(encoder) : forward(encoder);
         }
         encoder->channelA.level = level;
     } else {
