@@ -33,12 +33,12 @@ signal_bounce_t debounce(int gpio, encoder_t* encoder, uint32_t now) {
 }
 
 // TODO: spostare in file fsm.c
-inline void forward(encoder_t* encoder) {
+void forward(encoder_t* encoder) { // rendere inline
     encoder->direction = DIRECTION_FORWARD;
     atomic_fetch_add_explicit(&encoder->ticks, 1, memory_order_release);
 }
 
-inline void backward(encoder_t* encoder) {
+void backward(encoder_t* encoder) { // rendere inline
     encoder->direction = DIRECTION_BACKWARD;
     atomic_fetch_add_explicit(&encoder->ticks, -1, memory_order_release);
 }

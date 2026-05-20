@@ -8,13 +8,12 @@ float update(params_t* params, float dt) {
 
     float error_delta = params->error - params->error_prev;
     float derivative = error_delta / dt * K_D;
-
     params->error_prev = params->error;
 
     return proportional + integral + derivative;
 }
 
-float clamp(float *val) {
+bool clamp(float *val) {
     static unsigned int events = 0;
 
     if (*val > 1.0f) {
