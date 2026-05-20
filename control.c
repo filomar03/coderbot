@@ -1,20 +1,31 @@
 #include "control.h"
 
-void update(params_t* params) {
+float update(params_t* params, float dt) {
+    float proportional = params->error * K_P;
 
-    params->prevTicks = params->ticks;
-    params->ticks = ticks;
+    params->error_sum += params->error * dt;
+    float integral = params->error_sum * K_I;
 
+    float error_delta = params->error - params->error_prev;
+    float derivative = error_delta / dt * K_D;
+
+    params->error_prev = params->error;
+
+    return proportional + integral + derivative;
 }
 
-bool clamp(params_t* params) {
+float clamp(float *val) {
     static unsigned int events = 0;
-    if (params->dutyCyclePc > 100.0) {
-        params->dutyCyclePc = 100.0;
-        return true;
-    } else if (params->dutyCyclePc < 0.0) {
-        params->dutyCyclePc = 0.0;
-        return true;
+
+    if (*val > 1.0f) {
+        *val = 1.0f;
+        events++;
+    } else if (*val < -1.0f) {
+        *val = -1.0f;
+        events++;
+    } else {
+        events = 0;
     }
-    return(events > MAX);
+
+    return events > MAX_CLAMPING_EVENTS;
 }

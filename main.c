@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include <signal.h>
+#include <stdbool.h>
 #include <pigpio.h>
+#include "control.h"
 #include "gpio.h"
 #include "motor.h"
 #include "encoder.h"
@@ -63,30 +65,42 @@ void init() {
 }
 
 void terminate() {
-    motor_gpio_reset(&left_motor);
-    motor_gpio_reset(&right_motor);
-    encoder_gpio_cancel_isr(&left_encoder);
     encoder_gpio_cancel_isr(&right_encoder);
+    encoder_gpio_cancel_isr(&left_encoder);
+    motor_gpio_reset(&right_motor);
+    motor_gpio_reset(&left_motor);
     gpioTerminate();
+}
+
+volatile sig_atomic_t stop = 0;
+
+void signal_handler(int signum) {
+    stop = 1;
 }
 
 int main(void) {
     init();
     atexit(terminate);
 
-    uint32_t ms = 5000;
-    motor_gpio_move(&left_motor, 128 * LEFT_MOTOR_K);
-    motor_gpio_move(&right_motor, 128 * RIGHT_MOTOR_K);
-    sleep(ms / 1000);
-    // redirezionare output nel file log con operatore >> per creare dati
-    printf(
-        "ticks: %ld - %ld -> %ld\npwm factor: %.3f - %.3f\ntime: %dms\ndistance: (INSERT MANUALLY)mm\n\n", 
-        left_encoder.ticks, 
-        right_encoder.ticks, 
-        left_encoder.ticks - right_encoder.ticks, 
-        LEFT_MOTOR_K, 
-        RIGHT_MOTOR_K, 
-        ms
-    );
+    signal(SIGINT, &signal_handler);
+    signal(SIGTERM, &signal_handler);
+
+    uint32_t time_prev = gpioTick();
+
+    // setto pwm costante motore destra
+
+    while(!stop) {
+        uint32_t time = gpioTick();
+        float dt = (float) (time - time_prev) / SECS_TO_MICROS;
+        time_prev = time;
+
+        int left_ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_acquire);
+        // calcolo target e errore
+        // update
+        // clamp e sicura
+        // imposto pwm
+        // usleep
+    }
+
     exit(EXIT_SUCCESS);
 }

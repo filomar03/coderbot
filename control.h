@@ -7,12 +7,16 @@
 #define K_I 0.0
 #define K_D 0.0
 
-#define CONTROL_LOOP_INTERVAL_MS 10
+#define CONTROL_LOOP_INTERVAL 0.01
 #define MAX_CLAMPING_EVENTS 100
 
 typedef struct {
-    int ticks, prevTicks;
-    float dutyCyclePc,  
+    int error;
+    int error_prev;
+    int error_sum;
 } params_t;
+
+float update(params_t* params, float dt);
+float clamp(float *val);
 
 #endif
