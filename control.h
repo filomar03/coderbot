@@ -4,12 +4,12 @@
 #include <stdbool.h>
 #include "constants.h"
 
-#define K_P 5
+#define K_P 0.3
 #define K_I 0.0
 #define K_D 0.0
 
-#define CONTROL_LOOP_INTERVAL 0.01
-#define MAX_CLAMPING_EVENTS 10
+#define CONTROL_LOOP_INTERVAL (10 / SECS_TO_MICROS)
+#define MAX_CLAMPING_EVENTS 30
 
 typedef struct {
     float error;

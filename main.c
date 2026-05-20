@@ -1,4 +1,6 @@
+#include <math.h>
 #include <pthread.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -74,47 +76,55 @@ void terminate() {
 
 typedef struct {
     uint32_t micros;
+    float error;
     float dt;
     int ticks;
     float vel;
     float control_action;
-} stats_t;
+    int pwm;
+} stat_t;
 
-void print_stats(stats_t *s, int n) {
+void print_stats(stat_t *s, int n) {
     for (size_t i = 0; i < n; ++i) {
         if (s == NULL) {
-            printf("[%03zu] <NULL>\n", i);
+            printf("no stats available.\n");
             continue;
         }
 
-        printf("[%03zu] micros=%5u  dt=%8.6f  ticks=%6d  vel=%5.4f  clamped=%d  control_action=%5.4f\n",
-            i,
-            (unsigned)s->micros,
-            (double)s->dt,
-            s->ticks,
-            (double)s->vel,
-            (double)s->control_action);
+        printf("us=%u\tdt=%8.6f\te=%f\tticks=%d\tv=%f\tca=%f\tpwm=%d\n",
+            (unsigned)s[i].micros,
+            (double)s[i].dt,
+            (double)s[i].error,
+            s[i].ticks,
+            (double)s[i].vel,
+            (double)s[i].control_action,
+            s[i].pwm
+        );
     }
 }
 
-volatile sig_atomic_t stop = 0;
+volatile sig_atomic_t stop = false;
 
 void signal_handler(int signum) {
-    stop = 1;
+    stop = true;
 }
 
 int main(void) {
     init();
     atexit(terminate);
+    srand(time(NULL));
 
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-    stats_t stats[512];
-    int i = 0;
+    size_t stats_num = 10000;
+    stat_t *stats = (stat_t *) malloc(sizeof(stat_t) * stats_num);
+    if (stats == NULL) {
+        fprintf(stderr, "failed to allocate memory.\n");
+        stop = true;
+    }
 
-    float target_vel = 1.0f;
-
+    float target_vel = 2.0;
     params_t params = {
         .error = 0.0,
         .error_prev = 0.0,
@@ -126,37 +136,49 @@ int main(void) {
     right_motor.direction = DIRECTION_FORWARD;
     motor_gpio_move(&right_motor, 128 * RIGHT_MOTOR_K);
 
+    int i = 0;
     while(!stop) {
-        usleep(CONTROL_LOOP_INTERVAL * SECS_TO_MICROS);
+        if (usleep(CONTROL_LOOP_INTERVAL * SECS_TO_MICROS) != 0) {
+            fprintf(stderr, "usleep interrotto.\n");
+            stop = true;
+            continue;
+        }
 
         uint32_t time = gpioTick();
         float dt = (time - time_prev) / SECS_TO_MICROS;
         time_prev = time;
-        
+
+        // measure and compute data
         int ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_acquire);
         float velocity = ticks * M_PER_TICK / dt;
-
         params.error = target_vel - velocity;
 
+        // PID
         float control_action = update(&params, dt);
         if (clamp(&control_action)) {
-            printf("Clamping event limit exceeded.\n");
-            stop = true;
+            // printf("Clamping event limit exceeded.\n");
+            // stop = true;
         }
 
+        // power motor
         left_motor.direction = control_action >= 0 ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
-        motor_gpio_move(&left_motor, abs(control_action) * MAX_DUTY_CYCLE * LEFT_MOTOR_K);
-        
-        if (i < 512) {
+        int pwm = fabsf(control_action) * MAX_DUTY_CYCLE * LEFT_MOTOR_K;
+        motor_gpio_move(&left_motor, pwm);
+
+        // collect stats
+        if (i < stats_num) {
             stats[i].micros = time;
             stats[i].dt = dt;
             stats[i].ticks = ticks;
             stats[i].vel = velocity;
             stats[i].control_action = control_action;
-            i++;
+            stats[i].pwm = pwm;
         }
+        i++;
     }
 
-    print_stats((stats_t *) &stats[0], 512);
+    print_stats(&stats[0], i < stats_num ? i : stats_num);
+    printf("controller did %d iterations.", i);
+    free((void *) stats);
     exit(EXIT_SUCCESS);
 }
