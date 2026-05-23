@@ -6,5 +6,5 @@
 #define WHEEL_CIRCUMFERENCE 0.214
 #define M_PER_TICK ((float) (WHEEL_CIRCUMFERENCE) / TICKS_PER_REV)
 #define RAD_PER_TICK (2 * M_PI / TICKS_PER_REV)
-#define MAX_VELOCITY 2.0 // meters/seconds
+#define MAX_VELOCITY 0.5 // meters/seconds (approssimazione ricavata contanto i giri di ruota in 5 secondi con pwm al massimo)
 #define SECS_TO_MICROS pow(10, 6)
