@@ -44,7 +44,7 @@ encoder_t right_encoder = {
 };
 
 #define LEFT_MOTOR_K 1.0
-#define RIGHT_MOTOR_K 1.07
+#define RIGHT_MOTOR_K 1.11
 
 motor_t left_motor = {
     PIN_LEFT_FORWARD,
@@ -91,7 +91,7 @@ void print_stats(stat_t *s, int n) {
             continue;
         }
 
-        printf("us=%u\tdt=%8.6f\te=%f\tticks=%d\tv=%f\tca=%f\tpwm=%d\n",
+        printf("us=%u dt=%8.6f e=%f ticks=%d v=%f ca=%f pwm=%d\n",
             (unsigned)s[i].micros,
             (double)s[i].dt,
             (double)s[i].error,
@@ -112,73 +112,65 @@ void signal_handler(int signum) {
 int main(void) {
     init();
     atexit(terminate);
-    srand(time(NULL));
 
-    signal(SIGINT, &signal_handler);
-    signal(SIGTERM, &signal_handler);
+    int s = 15;
+    int times = 10;
+    int pwm = 128;
 
-    size_t stats_num = 10000;
-    stat_t *stats = (stat_t *) malloc(sizeof(stat_t) * stats_num);
-    if (stats == NULL) {
-        fprintf(stderr, "failed to allocate memory.\n");
-        stop = true;
-    }
+    float min_k = 0.6f;
+    float max_k = 1.4f;
 
-    float target_vel = 2.0;
-    params_t params = {
-        .error = 0.0,
-        .error_prev = 0.0,
-        .error_sum = 0.0
-    };
+    float target_diff = 0.1f / 100;
 
-    uint32_t time_prev = gpioTick();
+    bool running = true;
 
-    right_motor.direction = DIRECTION_FORWARD;
-    motor_gpio_move(&right_motor, 128 * RIGHT_MOTOR_K);
+    while(running) {
+        float k = (min_k + max_k) / 2;
 
-    int i = 0;
-    while(!stop) {
-        if (usleep(CONTROL_LOOP_INTERVAL * SECS_TO_MICROS) != 0) {
-            fprintf(stderr, "usleep interrotto.\n");
-            stop = true;
+        int ticks_left = 0;
+        int ticks_right = 0;
+
+        for (int i = 0; i < times; i++) {
+            left_motor.direction = DIRECTION_FORWARD;
+            motor_gpio_move(&left_motor, pwm);
+            right_motor.direction = DIRECTION_FORWARD;
+            motor_gpio_move(&right_motor, roundf(pwm * k));
+
+            sleep(s);
+
+            ticks_left += atomic_load_explicit(&left_encoder.ticks, memory_order_acquire);
+            ticks_right += atomic_load_explicit(&right_encoder.ticks, memory_order_acquire);
+
+            motor_gpio_reset(&left_motor);
+            motor_gpio_reset(&right_motor);
+
+            left_encoder.ticks = 0;
+            right_encoder.ticks = 0;
+
+            sleep(1);
+        }
+
+        int max = ticks_left > ticks_right ? ticks_left : ticks_right;
+        int min = ticks_left < ticks_right ? ticks_left : ticks_right;
+        float diff = (float) (max - min) / 2 / ((float) (max + min) / 2);
+
+        printf("range: [%.3f, %.3f]\n", min_k, max_k);
+        printf("k: %f\n", k);
+        printf("ticks: %d(l) - %d(r)\n", ticks_left, ticks_right);
+        printf("diff: %.2f%%\n", diff * 100);
+        printf("--------------------\n");
+
+        if (diff - target_diff <= 0 || (max_k - min_k) * 1000 < 2) {
+            running = false;
             continue;
         }
 
-        uint32_t time = gpioTick();
-        float dt = (time - time_prev) / SECS_TO_MICROS;
-        time_prev = time;
-
-        // measure and compute data
-        int ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_acquire);
-        float velocity = ticks * M_PER_TICK / dt;
-        params.error = target_vel - velocity;
-
-        // PID
-        float control_action = update(&params, dt);
-        if (clamp(&control_action)) {
-            // printf("Clamping event limit exceeded.\n");
-            // stop = true;
+        if (ticks_left > ticks_right) {
+            min_k = k;
+        } else {
+            max_k = k;
         }
-
-        // power motor
-        left_motor.direction = control_action >= 0 ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
-        int pwm = fabsf(control_action) * MAX_DUTY_CYCLE * LEFT_MOTOR_K;
-        motor_gpio_move(&left_motor, pwm);
-
-        // collect stats
-        if (i < stats_num) {
-            stats[i].micros = time;
-            stats[i].dt = dt;
-            stats[i].ticks = ticks;
-            stats[i].vel = velocity;
-            stats[i].control_action = control_action;
-            stats[i].pwm = pwm;
-        }
-        i++;
     }
 
-    print_stats(&stats[0], i < stats_num ? i : stats_num);
-    printf("controller did %d iterations.", i);
-    free((void *) stats);
     exit(EXIT_SUCCESS);
 }
