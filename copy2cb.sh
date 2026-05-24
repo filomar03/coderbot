@@ -5,7 +5,7 @@
 # ==========================================
 SOURCE_DIR="$HOME/Desktop/coderbot/coderbot"
 TARGET_USER="coderbot"
-TARGET_HOST="192.168.0.130"
+TARGET_HOST="emb-cb01.Home"
 TARGET_DIR="cb_filo"
 
 # ==========================================
