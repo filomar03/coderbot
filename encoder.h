@@ -13,18 +13,17 @@ typedef enum {
     CHANNEL_B
 } channel_t;
 
-#define BOUNCE_THRESHOLD 30
+// #define BOUNCE_THRESHOLD 30
 #define GLITCH_FILTER_PERCENTAGE 0.3
 #define GLITCH_FILTER_MICROS ((unsigned) floorf(1 / (MAX_VELOCITY / WHEEL_CIRCUMFERENCE * TICKS_PER_REV) * SECS_TO_MICROS * GLITCH_FILTER_PERCENTAGE))
 
-typedef enum {
-    BOUNCE_DETECTED,
-    NO_BOUNCE
-} signal_bounce_t;
+// typedef enum {
+//     BOUNCE_DETECTED,
+//     NO_BOUNCE
+// } signal_bounce_t;
 
 typedef struct {
     gpio_t pin;
-    uint32_t last_alert_tick; // questo non serve piu se utilizziamo glitch filter
     pin_state_t level;
 } encoder_channel_t;
 

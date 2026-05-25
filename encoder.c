@@ -17,20 +17,20 @@ void encoder_gpio_cancel_isr(encoder_t* encoder) {
     gpioSetAlertFuncEx(encoder->channelB.pin, NULL, NULL);
 }
 
-signal_bounce_t debounce(int gpio, encoder_t* encoder, uint32_t now) {
-    uint32_t *last = (gpio == encoder->channelA.pin) ?
-        &(encoder->channelA.last_alert_tick) : &(encoder->channelB.last_alert_tick);
+// signal_bounce_t debounce(int gpio, encoder_t* encoder, uint32_t now) {
+//     uint32_t *last = (gpio == encoder->channelA.pin) ?
+//         &(encoder->channelA.last_alert_tick) : &(encoder->channelB.last_alert_tick);
 
-    uint32_t elapsed = now - *last;
+//     uint32_t elapsed = now - *last;
 
-    if (elapsed < BOUNCE_THRESHOLD) {
-        return BOUNCE_DETECTED;
-    }
+//     if (elapsed < BOUNCE_THRESHOLD) {
+//         return BOUNCE_DETECTED;
+//     }
 
-    *last = now;
+//     *last = now;
 
-    return NO_BOUNCE;
-}
+//     return NO_BOUNCE;
+// }
 
 // TODO: spostare in file fsm.c
 void forward(encoder_t* encoder) { // rendere inline
