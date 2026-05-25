@@ -14,8 +14,8 @@ typedef enum {
 } channel_t;
 
 // #define BOUNCE_THRESHOLD 30
-#define GLITCH_FILTER_PERCENTAGE 0.3
-#define GLITCH_FILTER_MICROS ((unsigned) floorf(1 / (MAX_VELOCITY / WHEEL_CIRCUMFERENCE * TICKS_PER_REV) * SECS_TO_MICROS * GLITCH_FILTER_PERCENTAGE))
+#define GLITCH_FILTER_PERCENTAGE 0.5
+#define GLITCH_FILTER_MICROS ((unsigned) floorf(MAX_TICK_DURATION) * SECS_TO_MICROS * GLITCH_FILTER_PERCENTAGE)
 
 // typedef enum {
 //     BOUNCE_DETECTED,
@@ -30,9 +30,8 @@ typedef struct {
 typedef struct {
     encoder_channel_t channelA;
     encoder_channel_t channelB;
-    direction_t direction; // in teoria anche questo dovrebbe essere reso atomico
-    // (prababilmente si puo direttamente togliere e ottenere confrontanto tick
-    // attuali con tick passsati nel controllore)
+    direction_t direction; // TODO: rendere anche la direzione atomica
+    // (prababilmente si puo direttamente togliere e ottenere confrontanto segno dei tick
     atomic_int_fast64_t ticks;
 } encoder_t;
 

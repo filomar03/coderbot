@@ -1,4 +1,5 @@
 #include "encoder.h"
+#include <stdatomic.h>
 
 void encoder_gpio_register_isr(encoder_t* encoder, gpioAlertFuncEx_t isr) {
     gpioSetMode(encoder->channelA.pin, PI_INPUT);
@@ -33,14 +34,19 @@ void encoder_gpio_cancel_isr(encoder_t* encoder) {
 // }
 
 // TODO: spostare in file fsm.c
-void forward(encoder_t* encoder) { // rendere inline
+// TODO: rendere inline
+// uso relaxed perche tanto anche gli altri ordering
+// non hanno garanzie sulle tempistiche di visibilita,
+// in quel caso andrebbe usata un istruzione specifica per ISA
+void forward(encoder_t* encoder) {
     encoder->direction = DIRECTION_FORWARD;
-    atomic_fetch_add_explicit(&encoder->ticks, 1, memory_order_release);
+
+    atomic_fetch_add_explicit(&encoder->ticks, 1, memory_order_relaxed);
 }
 
-void backward(encoder_t* encoder) { // rendere inline
+void backward(encoder_t* encoder) {
     encoder->direction = DIRECTION_BACKWARD;
-    atomic_fetch_add_explicit(&encoder->ticks, -1, memory_order_release);
+    atomic_fetch_add_explicit(&encoder->ticks, -1, memory_order_relaxed);
 }
 
 // I callback vengono chiamati sequenzialmente in un thread separato

@@ -1,5 +1,6 @@
 #include <math.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -154,7 +155,10 @@ int main(void) {
         time_prev = time;
 
         // measure ticks
-        int ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_acquire);
+        // uso relaxed perche tanto anche gli altri ordering
+        // non hanno garanzie sulle tempistiche di visibilita,
+        // in quel caso andrebbe usata un istruzione specifica per ISA
+        int ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_relaxed);
         int d_ticks = ticks - ticks_prev;
         ticks_prev = ticks;
 
