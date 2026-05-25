@@ -5,18 +5,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "encoder.h"
-#include "gpio.h"
-#include "motor.h"
+#include "../motor.h"
 
 motor_t left_motor = {
-    PIN_LEFT_FORWARD, 
+    PIN_LEFT_FORWARD,
     PIN_LEFT_BACKWARD,
     DIRECTION_FORWARD
 };
 
 motor_t right_motor = {
-    PIN_RIGHT_FORWARD, 
+    PIN_RIGHT_FORWARD,
     PIN_RIGHT_BACKWARD,
     DIRECTION_FORWARD
 };
