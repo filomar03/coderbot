@@ -58,6 +58,9 @@ pid_controller_t controller = {
     .k_d = 0,
 };
 
+// TODO: verificare che vada effettivmente dritto
+// TODO: calibrare in modo che i motori rispettino
+// sia questo rapporto che le distanze percorse
 #define RIGHT_LEFT_MOTOR_RATIO 1.07425
 
 void init() {
