@@ -1,5 +1,5 @@
-#ifndef GPIO_H
-#define GPIO_H
+#ifndef _GPIO_H
+#define _GPIO_H
 
 typedef enum {
     NO_ERROR,

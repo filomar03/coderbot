@@ -3,7 +3,6 @@
 
 #include <pigpio.h>
 #include <stdint.h>
-
 #include "gpio.h"
 
 #define PWM_FREQUENCY 100

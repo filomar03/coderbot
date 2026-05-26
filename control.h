@@ -1,10 +1,9 @@
-#ifndef CONTROL_H
-#define CONTROL_H
+#ifndef _CONTROL_H
+#define _CONTROL_H
 
 #include <stdbool.h>
-#include "constants.h"
 
-#define CONTROL_LOOP_INTERVAL 100 // milliseconds
+#define CONTROL_LOOP_INTERVAL_MS 10
 #define MAX_CLAMPING_EVENTS 30
 
 typedef struct {
@@ -14,12 +13,12 @@ typedef struct {
 } pid_controller_t;
 
 typedef struct {
-    float error;
-    float error_prev;
-    float error_sum;
+    double error;
+    double error_prev;
+    double error_sum;
 } params_t;
 
-float update(pid_controller_t controller, params_t* params, float dt);
+float update(pid_controller_t controller, params_t *params, double dt);
 bool clamp(float *val);
 
 #endif

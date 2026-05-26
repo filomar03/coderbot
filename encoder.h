@@ -1,21 +1,16 @@
-#ifndef ENCODER_H
-#define ENCODER_H
+#ifndef _ENCODER_H
+#define _ENCODER_H
 
-#include "constants.h"
-#include "gpio.h"
-#include "motor.h"
 #include <pigpio.h>
 #include <stdint.h>
 #include <stdatomic.h>
-
-typedef enum {
-    CHANNEL_A,
-    CHANNEL_B
-} channel_t;
+#include <math.h>
+#include "constants.h"
+#include "gpio.h"
 
 // #define BOUNCE_THRESHOLD 30
 #define GLITCH_FILTER_PERCENTAGE 0.5
-#define GLITCH_FILTER_MICROS ((unsigned) floorf(MAX_TICK_DURATION) * SECS_TO_MICROS * GLITCH_FILTER_PERCENTAGE)
+#define GLITCH_FILTER_MICROS floor(MAX_TICK_DURATION * 1000000 * GLITCH_FILTER_PERCENTAGE)
 
 // typedef enum {
 //     BOUNCE_DETECTED,
@@ -30,8 +25,6 @@ typedef struct {
 typedef struct {
     encoder_channel_t channelA;
     encoder_channel_t channelB;
-    direction_t direction; // TODO: rendere anche la direzione atomica
-    // (prababilmente si puo direttamente togliere e ottenere confrontanto segno dei tick
     atomic_int_fast64_t ticks;
 } encoder_t;
 

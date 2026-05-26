@@ -16,6 +16,8 @@
 #include "motor.h"
 #include "encoder.h"
 
+// TODO: crearre struttura coderbot globale
+
 encoder_t left_encoder = {
     {
         PIN_ENCODER_LEFT_A,
@@ -25,7 +27,6 @@ encoder_t left_encoder = {
         PIN_ENCODER_LEFT_B,
         LOW
     },
-    DIRECTION_FORWARD,
     0
 };
 
@@ -38,7 +39,6 @@ encoder_t right_encoder = {
         PIN_ENCODER_RIGHT_B,
         LOW
     },
-    DIRECTION_FORWARD,
     0
 };
 
@@ -54,7 +54,7 @@ motor_t right_motor = {
     DIRECTION_FORWARD
 };
 
-pid_controller_t controller = {
+pid_controller_t controller_vel = {
     .k_p = 1.0f,
     .k_i = 0,
     .k_d = 0,
@@ -85,30 +85,42 @@ void terminate() {
 }
 
 #ifdef DEBUG
+#define STATS_NUM 100000
+
 typedef struct {
-    uint32_t micros;
-    float error;
-    float dt;
+    uint64_t exec_time_nanos;
+    float ctrl_loop_s;
     int ticks;
     float vel;
-    float control_action;
+    float error;
+    float ctrl_action;
     int pwm;
 } stat_t;
 
 void print_stats(stat_t *s, int n) {
+    printf("%s || %s || %s || %s || %s || %s || %s || %s\n",
+        "exec time (ns)",
+        "ctrl loop (ns)",
+        "ticks",
+        "vel (mm/ns)",
+        "error",
+        "ctrl action",
+        "pwm",
+    );
+
     for (size_t i = 0; i < n; ++i) {
         if (s == NULL) {
             printf("no stats available.\n");
             continue;
         }
 
-        printf("us=%u\tdt=%8.6f\tticks=%d\tv=%.3f\te=%f\tca=%f\tpwm=%d\n",
-            (unsigned)s[i].micros,
-            (double)s[i].dt * SECS_TO_MICROS,
+        printf("%8lu\t%8f\t%8d\t%8f\t%8f\t%8f\t%8d\n",
+            s[i].exec_time_nanos,
+            s[i].ctrl_loop_s,
             s[i].ticks,
-            (double)s[i].vel,
-            (double)s[i].error,
-            (double)s[i].control_action,
+            s[i].vel,
+            s[i].error,
+            s[i].ctrl_action,
             s[i].pwm
         );
     }
@@ -128,59 +140,46 @@ int main(void) {
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-#ifdef DEBUG
-    size_t stats_num = 1000000;
-    stat_t *stats = malloc(sizeof(stat_t) * stats_num);
-    if (stats == NULL) {
-        fprintf(stderr, "failed to allocate memory for stats.\n");
-    }
-#endif
+    float target_vel = 0.2; // m/s
+    params_t params = {};
 
-    float target_vel = 0.2f;
-    params_t params = {
-        .error = 0.0,
-        .error_prev = 0.0,
-        .error_sum = 0.0
-    };
-
-    struct timespec tp_prev;
-    if (clock_gettime(CLOCK_MONOTONIC_RAW, &tp_prev)) {
-        fprintf(stderr, "error reading clock.\n");
-        stop = true;
-    }
-
-    int ticks_prev = 0;
+    int ticks_last = 0;
+    struct timespec time_last;
 
     right_motor.direction = DIRECTION_FORWARD;
     motor_gpio_move(&right_motor, 128);
 
+#ifdef DEBUG
+    stat_t *stats = malloc(sizeof(stat_t) * STATS_NUM);
+    if (stats == NULL) {
+        fprintf(stderr, "failed to allocate memory for stats.\n");
+    }
     int i = 0;
+#endif
     while(!stop) {
-        // TODO: usare timer ad alta definizione
-        if (usleep(1000) != 0) {
-            stop = true;
-            continue;
-        }
-
         // measure time
-        uint32_t time = gpioTick();
-        float d_t = (time - time_prev) / SECS_TO_MICROS;
-        time_prev = time;
+        struct timespec start;
+        if (clock_gettime(CLOCK_MONOTONIC_RAW, &start) != 0) {
+            fprintf(stderr, "error while reading clock.\n");
+        }
+        time_last = start;
 
         // measure ticks
-        // uso relaxed perche tanto anche gli altri ordering
-        // non hanno garanzie sulle tempistiche di visibilita,
-        // in quel caso andrebbe usata un istruzione specifica per ISA
+        // uso relaxed perche gli ordering non influiscono sul delay
+        // di visibilita negli altri thread, ma definiscono solo dipendenza tra dati
         int ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_relaxed);
-        int d_ticks = ticks - ticks_prev;
-        ticks_prev = ticks;
+        int delta_ticks = ticks - ticks_last;
+        ticks_last = ticks;
+
+        // measure time
+        double delta_time = start.tv_sec - time_last.tv_sec + (start.tv_nsec - time_last.tv_nsec) / 1000'000'000.0; // s
 
         // measure velocity
-        float velocity = d_ticks * METERS_PER_TICK / d_t;
+        double velocity = delta_ticks * METERS_PER_TICK / delta_time; // m/s
         params.error = target_vel - velocity;
 
         // PID
-        float control_action = update(controller, &params, d_t);
+        float control_action = update(controller_vel, &params, delta_time);
         if (clamp(&control_action)) {
             // printf("Clamping event limit exceeded.\n");
             // stop = true;
@@ -190,29 +189,43 @@ int main(void) {
         left_motor.direction = control_action >= 0 ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
         int pwm = fabsf(control_action) * MAX_DUTY_CYCLE;
         if (motor_gpio_move(&left_motor, pwm) != NO_ERROR) {
-            stop = true;
-            fprintf(stderr, "error moving motor.");
+            fprintf(stderr, "error moving motor.\n");
         }
+
+        // sleep
+        struct timespec end;
+        if (clock_gettime(CLOCK_MONOTONIC_RAW, &end) != 0) {
+            fprintf(stderr, "error while reading clock.\n");
+        }
+        struct timespec control_loop_interval = {
+            .tv_sec = 0,
+            .tv_nsec = CONTROL_LOOP_INTERVAL_MS * 1000'000 - (end.tv_nsec - start.tv_nsec),
+        };
 
 #ifdef DEBUG
         // collect stats
         if (i < stats_num) {
-            stats[i].micros = time;
-            stats[i].dt = d_t;
-            stats[i].ticks = d_ticks;
+            stats[i].exec_time_nanos = end.tv_nsec - start.tv_nsec;
+            stats[i].ctrl_loop_nanos = delta_time;
+            stats[i].ticks = delta_ticks;
             stats[i].vel = velocity;
             stats[i].error = params.error;
-            stats[i].control_action = control_action;
+            stats[i].ctrl_action = control_action;
             stats[i].pwm = pwm;
         }
         i++;
 #endif
+
+        // sleep for [interval - <time took to exec code>]
+        if (nanosleep(&control_loop_interval, NULL) != 0) {
+            fprintf(stderr, "nanosleep interrupted.\n");
+        }
     }
 
 #ifdef DEBUG
     if (stats != NULL) {
-        printf("controller did %d iterations.\n", i);
-        print_stats(&stats[0], i < stats_num ? i : stats_num);
+        printf("PID controller did %d iterations.\n", i);
+        print_stats(&stats[0], i < STATS_NUM ? i : STATS_NUM);
         free(stats);
     }
 #endif

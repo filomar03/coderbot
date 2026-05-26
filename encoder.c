@@ -5,6 +5,9 @@ void encoder_gpio_register_isr(encoder_t* encoder, gpioAlertFuncEx_t isr) {
     gpioSetMode(encoder->channelA.pin, PI_INPUT);
     gpioSetPullUpDown(encoder->channelA.pin, PI_PUD_UP);
     gpioGlitchFilter(encoder->channelA.pin, GLITCH_FILTER_MICROS);
+    // sarebbe meglio usare isr (con nuova build di pigpio dovrebbero essere stati sistemati).
+    // dato che il thread degli alert viene chiamato nominalmente con frequenza di 1000,
+    // quindi 1ms (se non di piu) di potenziale delay, quindi fino a ~20 tick che slittano alliterazione successiva.
     gpioSetAlertFuncEx(encoder->channelA.pin, isr, (void*) encoder);
 
     gpioSetMode(encoder->channelB.pin, PI_INPUT);
@@ -34,22 +37,18 @@ void encoder_gpio_cancel_isr(encoder_t* encoder) {
 // }
 
 // TODO: spostare in file fsm.c
-// TODO: rendere inline
-// uso relaxed perche tanto anche gli altri ordering
-// non hanno garanzie sulle tempistiche di visibilita,
-// in quel caso andrebbe usata un istruzione specifica per ISA
+// uso relaxed perche gli ordering non influiscono sul delay
+// di visibilita negli altri thread, ma definiscono solo dipendenza tra dati
+// e qui non abbiamo dipendenza tra dati siccome avviene tutto su un thread solo
 void forward(encoder_t* encoder) {
-    encoder->direction = DIRECTION_FORWARD;
-
     atomic_fetch_add_explicit(&encoder->ticks, 1, memory_order_relaxed);
 }
 
 void backward(encoder_t* encoder) {
-    encoder->direction = DIRECTION_BACKWARD;
     atomic_fetch_add_explicit(&encoder->ticks, -1, memory_order_relaxed);
 }
 
-// I callback vengono chiamati sequenzialmente in un thread separato
+// I callback vengono chiamati sequenzialmente in un thread apposito
 void alert_callback(int gpio, int level, uint32_t tick, void *userdata) {
     encoder_t *encoder = (encoder_t *) userdata;
     // sostituito con glitch filter
