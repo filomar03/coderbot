@@ -19,8 +19,8 @@ typedef struct {
     uint8_t direction;
 } motor_t;
 
-void motor_gpio_init(const motor_t*);
-void motor_gpio_reset(const motor_t*);
-gpio_error_t motor_gpio_move(const motor_t*, uint32_t);
+void motor_gpio_init(motor_t*);
+void motor_gpio_reset(motor_t*);
+gpio_error_t motor_gpio_move(motor_t*, uint32_t);
 
 #endif

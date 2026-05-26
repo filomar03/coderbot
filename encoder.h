@@ -23,8 +23,8 @@ typedef struct {
 } encoder_channel_t;
 
 typedef struct {
-    encoder_channel_t channelA;
-    encoder_channel_t channelB;
+    encoder_channel_t channel_a;
+    encoder_channel_t channel_b;
     atomic_int_fast64_t ticks;
 } encoder_t;
 

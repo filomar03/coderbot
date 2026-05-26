@@ -175,6 +175,8 @@ int main(void) {
         double delta_time = start.tv_sec - time_last.tv_sec + (start.tv_nsec - time_last.tv_nsec) / 1000'000'000.0; // s
 
         // measure velocity
+        // potrebbe essere un float, ma non ho idea della scala di valori che potrebbbe asssumere,
+        // altrimenti potrei cambiare unita di misura
         double velocity = delta_ticks * METERS_PER_TICK / delta_time; // m/s
         params.error = target_vel - velocity;
 

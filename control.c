@@ -13,7 +13,8 @@ float update(pid_controller_t controller, params_t* params, double dt) {
     return proportional + integral + derivative;
 }
 
-// oltre a fare il clamp cerca di capire quando il robot e' incastrato
+// oltre a fare il clamp cerca di capire quando il
+// robot e' incastrato, per poter prevenire danni
 bool clamp(float *val) {
     static unsigned int events = 0;
 

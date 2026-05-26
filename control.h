@@ -12,6 +12,8 @@ typedef struct {
     float k_d;
 } pid_controller_t;
 
+// questi potrebbero essere semplici float,
+// ma non ho bene idea con quale scala di valori lavoriamo
 typedef struct {
     double error;
     double error_prev;
