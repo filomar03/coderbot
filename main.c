@@ -5,11 +5,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <pigpio.h>
 #include "control.h"
+#include "constants.h"
 #include "gpio.h"
 #include "motor.h"
 #include "encoder.h"
@@ -53,7 +55,7 @@ motor_t right_motor = {
 };
 
 pid_controller_t controller = {
-    .k_p = 10.0f,
+    .k_p = 1.0f,
     .k_i = 0,
     .k_d = 0,
 };
@@ -61,6 +63,9 @@ pid_controller_t controller = {
 // TODO: verificare che vada effettivmente dritto
 // TODO: calibrare in modo che i motori rispettino
 // sia questo rapporto che le distanze percorse
+// TODO: calcolare velocita con un certo pwm
+// TODO: a questo punto aggiustare anche il pwm
+// massimo del motore piu forte
 #define RIGHT_LEFT_MOTOR_RATIO 1.07425
 
 void init() {
@@ -131,14 +136,19 @@ int main(void) {
     }
 #endif
 
-    float target_vel = 0.08f;
+    float target_vel = 0.2f;
     params_t params = {
         .error = 0.0,
         .error_prev = 0.0,
         .error_sum = 0.0
     };
 
-    uint32_t time_prev = gpioTick();
+    struct timespec tp_prev;
+    if (clock_gettime(CLOCK_MONOTONIC_RAW, &tp_prev)) {
+        fprintf(stderr, "error reading clock.\n");
+        stop = true;
+    }
+
     int ticks_prev = 0;
 
     right_motor.direction = DIRECTION_FORWARD;

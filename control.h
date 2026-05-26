@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "constants.h"
 
-#define CONTROL_LOOP_INTERVAL (10 / SECS_TO_MICROS)
+#define CONTROL_LOOP_INTERVAL 100 // milliseconds
 #define MAX_CLAMPING_EVENTS 30
 
 typedef struct {
