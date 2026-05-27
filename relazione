@@ -1,0 +1,5 @@
+1) implementata interfaccia pigpio
+2) andare dritto
+3) sistemare andare dritto (errore taratura/usura motore, dimesione/grip ruota)
+    - branch per trovare valore k
+4) controller PID
