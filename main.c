@@ -96,7 +96,7 @@ typedef struct {
 
 void print_stats(stat_t *s, int n) {
     printf("%s || %s || %s || %s || %s || %s || %s\n",
-        "exec time (ms)",
+        "exec time (us)",
         "ctrl loop (ms)",
         "ticks",
         "vel (m/s)",
