@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SOURCE_DIR="$HOME/Desktop/coderbot/coderbot"
+SOURCE_DIR=""
 TARGET_USER="coderbot"
-TARGET_HOST="emb-cb01.Home"
+TARGET_HOST="emb-cb01.local"
 TARGET_DIR="cb_filo"
 
 echo "Starting transfer using tar over ssh..."
