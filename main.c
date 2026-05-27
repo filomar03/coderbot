@@ -60,9 +60,6 @@ pid_controller_t controller_vel = {
     .k_d = 0,
 };
 
-// TODO: verificare che vada effettivmente dritto
-// TODO: calcolare velocita con un certo pwm
-// TODO: aggiustare anche il pwm massimo del motore piu debole per coincidere con quello piu forte
 #define RIGHT_LEFT_MOTOR_RATIO 1.07425
 
 void init() {
