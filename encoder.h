@@ -8,14 +8,8 @@
 #include "constants.h"
 #include "gpio.h"
 
-// #define BOUNCE_THRESHOLD 30
-#define GLITCH_FILTER_PERCENTAGE 0.5
-#define GLITCH_FILTER_MICROS floor(MAX_TICK_DURATION * 1000000 * GLITCH_FILTER_PERCENTAGE)
-
-// typedef enum {
-//     BOUNCE_DETECTED,
-//     NO_BOUNCE
-// } signal_bounce_t;
+#define GLITCH_FILTER_PERCENTAGE 0.5f
+#define GLITCH_FILTER_MICROS floor(MAX_TICK_DURATION * 1'000'000 * GLITCH_FILTER_PERCENTAGE)
 
 typedef struct {
     gpio_t pin;

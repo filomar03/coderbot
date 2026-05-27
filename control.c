@@ -8,6 +8,7 @@ float update(pid_controller_t controller, params_t* params, double dt) {
 
     double error_delta = params->error - params->error_prev;
     double derivative = error_delta / dt * controller.k_d;
+
     params->error_prev = params->error;
 
     return proportional + integral + derivative;

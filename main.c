@@ -61,11 +61,8 @@ pid_controller_t controller_vel = {
 };
 
 // TODO: verificare che vada effettivmente dritto
-// TODO: calibrare in modo che i motori rispettino
-// sia questo rapporto che le distanze percorse
 // TODO: calcolare velocita con un certo pwm
-// TODO: a questo punto aggiustare anche il pwm
-// massimo del motore piu forte
+// TODO: aggiustare anche il pwm massimo del motore piu debole per coincidere con quello piu forte
 #define RIGHT_LEFT_MOTOR_RATIO 1.07425
 
 void init() {
@@ -88,24 +85,24 @@ void terminate() {
 #define STATS_NUM 100000
 
 typedef struct {
-    uint64_t exec_time_nanos;
-    float ctrl_loop_s;
+    int64_t exec_time_nanos;
+    int64_t ctrl_loop_nanos;
     int ticks;
-    float vel;
-    float error;
+    double vel;
+    double error;
     float ctrl_action;
     int pwm;
 } stat_t;
 
 void print_stats(stat_t *s, int n) {
-    printf("%s || %s || %s || %s || %s || %s || %s || %s\n",
-        "exec time (ns)",
-        "ctrl loop (ns)",
+    printf("%s || %s || %s || %s || %s || %s || %s\n",
+        "exec time (ms)",
+        "ctrl loop (ms)",
         "ticks",
-        "vel (mm/ns)",
-        "error",
+        "vel (m/s)",
+        "error   ",
         "ctrl action",
-        "pwm",
+        "pwm"
     );
 
     for (size_t i = 0; i < n; ++i) {
@@ -114,9 +111,9 @@ void print_stats(stat_t *s, int n) {
             continue;
         }
 
-        printf("%8lu\t%8f\t%8d\t%8f\t%8f\t%8f\t%8d\n",
-            s[i].exec_time_nanos,
-            s[i].ctrl_loop_s,
+        printf("%14.5f || %14.5f || %5d || %9.5f || %8.5f || %11.5f || %3d\n",
+            s[i].exec_time_nanos / 1'000.0,
+            s[i].ctrl_loop_nanos / 1'000'000.0,
             s[i].ticks,
             s[i].vel,
             s[i].error,
@@ -133,6 +130,18 @@ void signal_handler(int signum) {
     stop = true;
 }
 
+static inline struct timespec compute_time_diff(struct timespec *t0, struct timespec *t1) {
+    struct timespec diff = {
+        .tv_sec = t1->tv_sec - t0->tv_sec,
+        .tv_nsec = t1->tv_nsec - t0->tv_nsec,
+    };
+    return diff;
+}
+
+static inline int64_t timespec_to_ns(struct timespec *ts) {
+    return ts->tv_sec * 1'000'000'000 + ts->tv_nsec;
+}
+
 int main(void) {
     init();
     atexit(terminate);
@@ -145,6 +154,9 @@ int main(void) {
 
     int ticks_last = 0;
     struct timespec time_last;
+    if (clock_gettime(CLOCK_MONOTONIC_RAW, &time_last) != 0) {
+        fprintf(stderr, "error while reading clock.\n");
+    }
 
     right_motor.direction = DIRECTION_FORWARD;
     motor_gpio_move(&right_motor, 128);
@@ -162,7 +174,6 @@ int main(void) {
         if (clock_gettime(CLOCK_MONOTONIC_RAW, &start) != 0) {
             fprintf(stderr, "error while reading clock.\n");
         }
-        time_last = start;
 
         // measure ticks
         // uso relaxed perche gli ordering non influiscono sul delay
@@ -171,17 +182,18 @@ int main(void) {
         int delta_ticks = ticks - ticks_last;
         ticks_last = ticks;
 
-        // measure time
-        double delta_time = start.tv_sec - time_last.tv_sec + (start.tv_nsec - time_last.tv_nsec) / 1000'000'000.0; // s
+        // measure delta time
+        struct timespec delta_time = compute_time_diff(&time_last, &start);
+        time_last = start;
 
         // measure velocity
         // potrebbe essere un float, ma non ho idea della scala di valori che potrebbbe asssumere,
         // altrimenti potrei cambiare unita di misura
-        double velocity = delta_ticks * METERS_PER_TICK / delta_time; // m/s
+        double velocity = delta_ticks * METERS_PER_TICK / (timespec_to_ns(&delta_time) / 1'000'000'000.0); // m/s
         params.error = target_vel - velocity;
 
         // PID
-        float control_action = update(controller_vel, &params, delta_time);
+        float control_action = update(controller_vel, &params, timespec_to_ns(&delta_time) /  1'000'000'000.0);
         if (clamp(&control_action)) {
             // printf("Clamping event limit exceeded.\n");
             // stop = true;
@@ -194,21 +206,22 @@ int main(void) {
             fprintf(stderr, "error moving motor.\n");
         }
 
-        // sleep
+        // compute sleep time
         struct timespec end;
         if (clock_gettime(CLOCK_MONOTONIC_RAW, &end) != 0) {
             fprintf(stderr, "error while reading clock.\n");
         }
-        struct timespec control_loop_interval = {
+        struct timespec exec_time = compute_time_diff(&start, &end);
+        struct timespec nsleep_time = {
             .tv_sec = 0,
-            .tv_nsec = CONTROL_LOOP_INTERVAL_MS * 1000'000 - (end.tv_nsec - start.tv_nsec),
+            .tv_nsec = CONTROL_LOOP_INTERVAL_MS * 1'000'000 - timespec_to_ns(&exec_time),
         };
 
 #ifdef DEBUG
         // collect stats
-        if (i < stats_num) {
-            stats[i].exec_time_nanos = end.tv_nsec - start.tv_nsec;
-            stats[i].ctrl_loop_nanos = delta_time;
+        if (i < STATS_NUM) {
+            stats[i].exec_time_nanos = timespec_to_ns(&exec_time);
+            stats[i].ctrl_loop_nanos = timespec_to_ns(&delta_time);
             stats[i].ticks = delta_ticks;
             stats[i].vel = velocity;
             stats[i].error = params.error;
@@ -218,8 +231,8 @@ int main(void) {
         i++;
 #endif
 
-        // sleep for [interval - <time took to exec code>]
-        if (nanosleep(&control_loop_interval, NULL) != 0) {
+        // sleep
+        if (nanosleep(&nsleep_time, NULL) != 0) {
             fprintf(stderr, "nanosleep interrupted.\n");
         }
     }
@@ -227,6 +240,11 @@ int main(void) {
 #ifdef DEBUG
     if (stats != NULL) {
         printf("PID controller did %d iterations.\n", i);
+        printf("Controller config:\n\tkP = %f\n\tkI = %f\n\tkD = %f\n",
+            controller_vel.k_p,
+            controller_vel.k_i,
+            controller_vel.k_d
+        );
         print_stats(&stats[0], i < STATS_NUM ? i : STATS_NUM);
         free(stats);
     }
