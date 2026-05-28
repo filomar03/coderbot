@@ -156,7 +156,7 @@ int main(void) {
     }
 
     right_motor.direction = DIRECTION_FORWARD;
-    motor_gpio_move(&right_motor, 128);
+    motor_gpio_move(&right_motor, 0.5f); // TODO segnarsi a che velocita corrisponde!!
 
 #ifdef DEBUG
     stat_t *stats = malloc(sizeof(stat_t) * STATS_NUM);
