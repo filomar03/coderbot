@@ -6,7 +6,7 @@
 #include "gpio.h"
 
 #define PWM_FREQUENCY 100
-#define MAX_DUTY_CYCLE 255
+#define MAX_DUTY_CYCLE 1024
 
 typedef enum {
     DIRECTION_FORWARD,
@@ -21,6 +21,6 @@ typedef struct {
 
 void motor_gpio_init(motor_t*);
 void motor_gpio_reset(motor_t*);
-gpio_error_t motor_gpio_move(motor_t*, uint32_t);
+gpio_error_t motor_gpio_move(motor_t*, float);
 
 #endif

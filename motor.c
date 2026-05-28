@@ -17,10 +17,12 @@ void motor_gpio_reset(motor_t* motor) {
     gpioWrite(motor->pin_backward, 0);
 }
 
-gpio_error_t motor_gpio_move(motor_t* motor, uint32_t duty_cycle) {
-    if(duty_cycle > MAX_DUTY_CYCLE) {
-        return ERROR_DUTY_CYC_OUT_OF_RANGE;
+gpio_error_t motor_gpio_move(motor_t* motor, float power) {
+    if (power < 0.0f || power > 1.0f) {
+        return ERROR_PWM_POWER_OUT_OF_RANGE;
     }
+
+    int duty_cycle = power * MAX_DUTY_CYCLE;
 
     if(motor->direction == DIRECTION_FORWARD) {
         gpioWrite(motor->pin_backward, 0);

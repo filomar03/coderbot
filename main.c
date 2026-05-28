@@ -152,7 +152,7 @@ int main(void) {
     left_motor.direction = DIRECTION_FORWARD;
     motor_gpio_move(&left_motor, 0.5f * L2R_PWM_COMPENSATION);
     right_motor.direction = DIRECTION_FORWARD;
-    motor_gpio_move(&right_motor, 128);
+    motor_gpio_move(&right_motor, 0.5f); // TODO segnarsi a che velocita corrisponde!!
 
     struct timespec ts = {
         .tv_sec = 5,
