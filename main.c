@@ -60,7 +60,10 @@ pid_controller_t controller_vel = {
     .k_d = 0,
 };
 
-#define RIGHT_LEFT_MOTOR_RATIO 1.07425
+// solo uno dei 2 deve essere usato,
+// sono compensazioni per fali andare uguale
+#define R2L_PWM_COMPENSATION 1.07425
+#define L2R_PWM_COMPENSATION (1 / R2L_PWM_COMPENSATION)
 
 void init() {
     gpioInitialise();
@@ -146,105 +149,20 @@ int main(void) {
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-    float target_vel = 0.2; // m/s
-    params_t params = {};
-
-    int ticks_last = 0;
-    struct timespec time_last;
-    if (clock_gettime(CLOCK_MONOTONIC_RAW, &time_last) != 0) {
-        fprintf(stderr, "error while reading clock.\n");
-    }
-
+    left_motor.direction = DIRECTION_FORWARD;
+    motor_gpio_move(&left_motor, 0.5f * L2R_PWM_COMPENSATION);
     right_motor.direction = DIRECTION_FORWARD;
     motor_gpio_move(&right_motor, 128);
 
-#ifdef DEBUG
-    stat_t *stats = malloc(sizeof(stat_t) * STATS_NUM);
-    if (stats == NULL) {
-        fprintf(stderr, "failed to allocate memory for stats.\n");
-    }
-    int i = 0;
-#endif
-    while(!stop) {
-        // measure time
-        struct timespec start;
-        if (clock_gettime(CLOCK_MONOTONIC_RAW, &start) != 0) {
-            fprintf(stderr, "error while reading clock.\n");
-        }
+    struct timespec ts = {
+        .tv_sec = 5,
+        .tv_nsec = 0,
+    };
 
-        // measure ticks
-        // uso relaxed perche gli ordering non influiscono sul delay
-        // di visibilita negli altri thread, ma definiscono solo dipendenza tra dati
-        int ticks = atomic_load_explicit(&left_encoder.ticks, memory_order_relaxed);
-        int delta_ticks = ticks - ticks_last;
-        ticks_last = ticks;
+    nanosleep(&ts, NULL);
 
-        // measure delta time
-        struct timespec delta_time = compute_time_diff(&time_last, &start);
-        time_last = start;
+    motor_gpio_reset(&left_motor);
+    motor_gpio_reset(&right_motor);
 
-        // measure velocity
-        // potrebbe essere un float, ma non ho idea della scala di valori che potrebbbe asssumere,
-        // altrimenti potrei cambiare unita di misura
-        double velocity = delta_ticks * METERS_PER_TICK / (timespec_to_ns(&delta_time) / 1'000'000'000.0); // m/s
-        params.error = target_vel - velocity;
-
-        // PID
-        float control_action = update(controller_vel, &params, timespec_to_ns(&delta_time) /  1'000'000'000.0);
-        if (clamp(&control_action)) {
-            // printf("Clamping event limit exceeded.\n");
-            // stop = true;
-        }
-
-        // power motor
-        left_motor.direction = control_action >= 0 ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
-        int pwm = fabsf(control_action) * MAX_DUTY_CYCLE;
-        if (motor_gpio_move(&left_motor, pwm) != NO_ERROR) {
-            fprintf(stderr, "error moving motor.\n");
-        }
-
-        // compute sleep time
-        struct timespec end;
-        if (clock_gettime(CLOCK_MONOTONIC_RAW, &end) != 0) {
-            fprintf(stderr, "error while reading clock.\n");
-        }
-        struct timespec exec_time = compute_time_diff(&start, &end);
-        struct timespec nsleep_time = {
-            .tv_sec = 0,
-            .tv_nsec = CONTROL_LOOP_INTERVAL_MS * 1'000'000 - timespec_to_ns(&exec_time),
-        };
-
-#ifdef DEBUG
-        // collect stats
-        if (i < STATS_NUM) {
-            stats[i].exec_time_nanos = timespec_to_ns(&exec_time);
-            stats[i].ctrl_loop_nanos = timespec_to_ns(&delta_time);
-            stats[i].ticks = delta_ticks;
-            stats[i].vel = velocity;
-            stats[i].error = params.error;
-            stats[i].ctrl_action = control_action;
-            stats[i].pwm = pwm;
-        }
-        i++;
-#endif
-
-        // sleep
-        if (nanosleep(&nsleep_time, NULL) != 0) {
-            fprintf(stderr, "nanosleep interrupted.\n");
-        }
-    }
-
-#ifdef DEBUG
-    if (stats != NULL) {
-        printf("PID controller did %d iterations.\n", i);
-        printf("Controller config:\n\tkP = %f\n\tkI = %f\n\tkD = %f\n",
-            controller_vel.k_p,
-            controller_vel.k_i,
-            controller_vel.k_d
-        );
-        print_stats(&stats[0], i < STATS_NUM ? i : STATS_NUM);
-        free(stats);
-    }
-#endif
     exit(EXIT_SUCCESS);
 }
