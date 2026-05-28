@@ -1,6 +1,0 @@
-verificare che vada dritto
-misurare velocita ad un certo pwm
-clampare max pwm del motore piu forte in modo da bilanciare il piu debole
-calcolare parametri pid
-implemenntare odometria e planner
-implementare architettura a task
