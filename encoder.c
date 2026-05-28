@@ -1,24 +1,25 @@
-#include "encoder.h"
 #include <stdatomic.h>
+#include <assert.h>
+#include "encoder.h"
 
 void encoder_gpio_register_isr(encoder_t* encoder, gpioAlertFuncEx_t isr) {
-    gpioSetMode(encoder->channel_a.pin, PI_INPUT);
-    gpioSetPullUpDown(encoder->channel_a.pin, PI_PUD_UP);
-    gpioGlitchFilter(encoder->channel_a.pin, GLITCH_FILTER_MICROS);
+    assert(gpioSetMode(encoder->channel_a.pin, PI_INPUT) == 0);
+    assert(gpioSetPullUpDown(encoder->channel_a.pin, PI_PUD_UP) == 0);
+    assert(gpioGlitchFilter(encoder->channel_a.pin, GLITCH_FILTER_MICROS) == 0);
     // sarebbe meglio usare isr (con nuova build di pigpio dovrebbero essere stati sistemati).
     // dato che il thread degli alert viene chiamato nominalmente con frequenza di 1000,
     // quindi 1ms (se non di piu) di potenziale delay, quindi fino a ~20 tick che slittano alliterazione successiva.
-    gpioSetAlertFuncEx(encoder->channel_a.pin, isr, encoder);
+    assert(gpioSetAlertFuncEx(encoder->channel_a.pin, isr, encoder) == 0);
 
-    gpioSetMode(encoder->channel_b.pin, PI_INPUT);
-    gpioSetPullUpDown(encoder->channel_b.pin, PI_PUD_UP);
-    gpioGlitchFilter(encoder->channel_b.pin, GLITCH_FILTER_MICROS);
-    gpioSetAlertFuncEx(encoder->channel_b.pin, isr, encoder);
+    assert(gpioSetMode(encoder->channel_b.pin, PI_INPUT) == 0);
+    assert(gpioSetPullUpDown(encoder->channel_b.pin, PI_PUD_UP) == 0);
+    assert(gpioGlitchFilter(encoder->channel_b.pin, GLITCH_FILTER_MICROS) == 0);
+    assert(gpioSetAlertFuncEx(encoder->channel_b.pin, isr, encoder) == 0);
 }
 
 void encoder_gpio_cancel_isr(encoder_t* encoder) {
-    gpioSetAlertFuncEx(encoder->channel_a.pin, NULL, NULL);
-    gpioSetAlertFuncEx(encoder->channel_b.pin, NULL, NULL);
+    assert(gpioSetAlertFuncEx(encoder->channel_a.pin, NULL, NULL) == 0);
+    assert(gpioSetAlertFuncEx(encoder->channel_b.pin, NULL, NULL) == 0);
 }
 
 // uso relaxed perche gli ordering non influiscono sul delay

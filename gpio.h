@@ -3,8 +3,7 @@
 
 typedef enum {
     NO_ERROR,
-    ERROR_DUTY_CYC_OUT_OF_RANGE = 10,
-    ERROR_INVALID_MODE = 20,
+    ERROR_PWM_POWER_OUT_OF_RANGE = 10,
 } gpio_error_t;
 
 typedef enum {
