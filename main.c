@@ -146,7 +146,7 @@ int main(void) {
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-    float target_vel = 0.2; // m/s
+    float target_vel = 0.1266; // m/s
     params_t params = {};
 
     int ticks_last = 0;
