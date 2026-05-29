@@ -149,6 +149,16 @@ static inline int64_t timespec_to_ns(struct timespec *ts) {
     return ts->tv_sec * 1'000'000'000 + ts->tv_nsec;
 }
 
+#define DURATION 10
+#define REPS 10
+#define POWER 0.5
+
+#define PARAM_MIN 0.6
+#define PARAM_MAX 1.4
+
+#define DIFF_TICKS 0.001
+#define DIFF_PARAM 0.0001
+
 int main(void) {
     init();
     atexit(terminate);
@@ -156,20 +166,57 @@ int main(void) {
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-    left_motor.direction = MOTOR_DIRECTION;
-    motor_gpio_move(&left_motor, 0.5f);
-    right_motor.direction = MOTOR_DIRECTION;
-    motor_gpio_move(&right_motor, 0.5f * R2L_PWM_COMPENSATION);
+    double param_min = PARAM_MIN, param_max = PARAM_MAX;
+    while(!stop) {
+        double param = (param_min + param_max) / 2;
 
-    struct timespec ts = {
-        .tv_sec = 5,
-        .tv_nsec = 0,
-    };
+        int ticks_left = 0;
+        int ticks_right = 0;
 
-    nanosleep(&ts, NULL);
 
-    motor_gpio_reset(&left_motor);
-    motor_gpio_reset(&right_motor);
+        for (int i = 0; i < REPS; i++) {
+            left_motor.direction = MOTOR_DIRECTION;
+            motor_gpio_move(&left_motor, POWER);
+            right_motor.direction = MOTOR_DIRECTION;
+            motor_gpio_move(&right_motor, POWER * param);
+
+            struct timespec ts = {
+                .tv_sec = DURATION,
+                .tv_nsec = 0,
+            };
+
+            nanosleep(&ts, NULL);
+
+            ticks_left += atomic_load_explicit(&left_encoder.ticks, memory_order_relaxed);
+            ticks_right += atomic_load_explicit(&right_encoder.ticks, memory_order_relaxed);
+
+            motor_gpio_reset(&left_motor);
+            motor_gpio_reset(&right_motor);
+            left_encoder.ticks = 0;
+            right_encoder.ticks = 0;
+
+            sleep(1);
+        }
+
+        double diff = (double) abs(ticks_left - ticks_right) / ticks_left;
+
+        printf("range: [%.3f, %.3f]\n", param_min, param_max);
+        printf("k: %f\n", param);
+        printf("ticks: %d(l) - %d(r)\n", ticks_left, ticks_right);
+        printf("diff: %.2f%%\n", diff * 100);
+        printf("--------------------\n");
+
+
+        if (diff <= DIFF_TICKS || param_max - param_min < DIFF_PARAM) {
+            printf("param val: %f\nreps: %d\nduration: %d\npower: %f", param, REPS, DURATION, POWER);
+            break;
+        }
+
+        if (ticks_left > ticks_right) {
+            param_min = param;
+        } else {
+            param_max = param;
+        }
 
     exit(EXIT_SUCCESS);
 }
