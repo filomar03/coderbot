@@ -62,7 +62,7 @@ motor_t right_motor = {
 };
 
 pid_controller_t controller_vel = {
-    .k_p = 1.0f,
+    .k_p = 40.0f,
     .k_i = 0,
     .k_d = 0,
 };
@@ -89,7 +89,7 @@ void terminate() {
 }
 
 #ifdef DEBUG
-#define STATS_NUM 100000
+#define STATS_NUM 10000
 
 typedef struct {
     int64_t exec_time_nanos;
@@ -97,8 +97,8 @@ typedef struct {
     int ticks;
     double vel;
     double error;
-    float ctrl_action;
-    int pwm;
+    float ctrl_act;
+    float power;
 } stat_t;
 
 void print_stats(stat_t *s, int n) {
@@ -108,8 +108,8 @@ void print_stats(stat_t *s, int n) {
         "ticks",
         "vel (m/s)",
         "error   ",
-        "ctrl action",
-        "pwm"
+        "ctrl act",
+        "power"
     );
 
     for (size_t i = 0; i < n; ++i) {
@@ -118,14 +118,14 @@ void print_stats(stat_t *s, int n) {
             continue;
         }
 
-        printf("%14.5f || %14.5f || %5d || %9.5f || %8.5f || %11.5f || %3d\n",
+        printf("%14.5f || %14.5f || %5d || %9.5f || %8.5f || %8.5f || %5.3f\n",
             s[i].exec_time_nanos / 1'000.0,
             s[i].ctrl_loop_nanos / 1'000'000.0,
             s[i].ticks,
             s[i].vel,
             s[i].error,
-            s[i].ctrl_action,
-            s[i].pwm
+            s[i].ctrl_act,
+            s[i].power
         );
     }
 }
@@ -157,9 +157,9 @@ int main(void) {
     signal(SIGTERM, &signal_handler);
 
     left_motor.direction = MOTOR_DIRECTION;
-    motor_gpio_move(&left_motor, 0.5f * L2R_PWM_COMPENSATION);
+    motor_gpio_move(&left_motor, 0.5f);
     right_motor.direction = MOTOR_DIRECTION;
-    motor_gpio_move(&right_motor, 0.5f); // TODO segnarsi a che velocita corrisponde!!
+    motor_gpio_move(&right_motor, 0.5f * R2L_PWM_COMPENSATION);
 
     struct timespec ts = {
         .tv_sec = 5,
