@@ -16,6 +16,16 @@
 #include "motor.h"
 #include "encoder.h"
 
+#define TARGET_ABS_V 0.1266
+#ifdef REVERSE
+#define TARGET_V -TARGET_ABS_V
+#define FIXED_MOTOR_DIR DIRECTION_BACKWARD
+#endif
+#ifndef REVERSE
+#define TARGET_V TARGET_ABS_V
+#define FIXED_MOTOR_DIR DIRECTION_FORWARD
+#endif
+
 // TODO: crearre struttura coderbot globale
 
 encoder_t left_encoder = {
@@ -55,12 +65,15 @@ motor_t right_motor = {
 };
 
 pid_controller_t controller_vel = {
-    .k_p = 1.0f,
+    .k_p = 40.0f,
     .k_i = 0,
     .k_d = 0,
 };
 
-#define RIGHT_LEFT_MOTOR_RATIO 1.07425
+// solo uno dei 2 deve essere usato,
+// sono compensazioni per fali andare uguale
+#define R2L_PWM_COMPENSATION 1.07425
+#define L2R_PWM_COMPENSATION (1 / R2L_PWM_COMPENSATION)
 
 void init() {
     gpioInitialise();
@@ -79,7 +92,7 @@ void terminate() {
 }
 
 #ifdef DEBUG
-#define STATS_NUM 100000
+#define STATS_NUM 10000
 
 typedef struct {
     int64_t exec_time_nanos;
@@ -87,8 +100,8 @@ typedef struct {
     int ticks;
     double vel;
     double error;
-    float ctrl_action;
-    int pwm;
+    float ctrl_act;
+    float power;
 } stat_t;
 
 void print_stats(stat_t *s, int n) {
@@ -98,8 +111,8 @@ void print_stats(stat_t *s, int n) {
         "ticks",
         "vel (m/s)",
         "error   ",
-        "ctrl action",
-        "pwm"
+        "ctrl act",
+        "power"
     );
 
     for (size_t i = 0; i < n; ++i) {
@@ -108,14 +121,14 @@ void print_stats(stat_t *s, int n) {
             continue;
         }
 
-        printf("%14.5f || %14.5f || %5d || %9.5f || %8.5f || %11.5f || %3d\n",
+        printf("%14.5f || %14.5f || %5d || %9.5f || %8.5f || %8.5f || %5.3f\n",
             s[i].exec_time_nanos / 1'000.0,
             s[i].ctrl_loop_nanos / 1'000'000.0,
             s[i].ticks,
             s[i].vel,
             s[i].error,
-            s[i].ctrl_action,
-            s[i].pwm
+            s[i].ctrl_act,
+            s[i].power
         );
     }
 }
@@ -146,7 +159,7 @@ int main(void) {
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-    float target_vel = 0.1266; // m/s
+    float target_vel = TARGET_V; // m/s
     params_t params = {};
 
     int ticks_last = 0;
@@ -155,8 +168,8 @@ int main(void) {
         fprintf(stderr, "error while reading clock.\n");
     }
 
-    right_motor.direction = DIRECTION_FORWARD;
-    motor_gpio_move(&right_motor, 0.5f); // TODO segnarsi a che velocita corrisponde!!
+    right_motor.direction = FIXED_MOTOR_DIR;
+    motor_gpio_move(&right_motor, 0.5f * R2L_PWM_COMPENSATION);
 
 #ifdef DEBUG
     stat_t *stats = malloc(sizeof(stat_t) * STATS_NUM);
@@ -198,8 +211,7 @@ int main(void) {
 
         // power motor
         left_motor.direction = control_action >= 0 ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
-        int pwm = fabsf(control_action) * MAX_DUTY_CYCLE;
-        if (motor_gpio_move(&left_motor, pwm) != NO_ERROR) {
+        if (motor_gpio_move(&left_motor, fabsf(control_action)) != NO_ERROR) {
             fprintf(stderr, "error moving motor.\n");
         }
 
@@ -222,8 +234,8 @@ int main(void) {
             stats[i].ticks = delta_ticks;
             stats[i].vel = velocity;
             stats[i].error = params.error;
-            stats[i].ctrl_action = control_action;
-            stats[i].pwm = pwm;
+            stats[i].ctrl_act = control_action;
+            stats[i].power = fabsf(control_action);
         }
         i++;
 #endif
