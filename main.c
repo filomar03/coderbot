@@ -16,6 +16,13 @@
 #include "motor.h"
 #include "encoder.h"
 
+#ifdef REVERSE
+#define MOTOR_DIRECTION DIRECTION_BACKWARD
+#endif
+#ifndef REVERSE
+#define MOTOR_DIRECTION DIRECTION_FORWARD
+#endif
+
 // TODO: crearre struttura coderbot globale
 
 encoder_t left_encoder = {
@@ -149,9 +156,9 @@ int main(void) {
     signal(SIGINT, &signal_handler);
     signal(SIGTERM, &signal_handler);
 
-    left_motor.direction = DIRECTION_FORWARD;
+    left_motor.direction = MOTOR_DIRECTION;
     motor_gpio_move(&left_motor, 0.5f * L2R_PWM_COMPENSATION);
-    right_motor.direction = DIRECTION_FORWARD;
+    right_motor.direction = MOTOR_DIRECTION;
     motor_gpio_move(&right_motor, 0.5f); // TODO segnarsi a che velocita corrisponde!!
 
     struct timespec ts = {
